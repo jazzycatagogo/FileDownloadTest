@@ -5,11 +5,15 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -50,12 +54,12 @@ public class FileDownloadServlet extends HttpServlet {
 		con.setRequestMethod("GET");
 		con.connect();
 
-		String fileName = request.getParameter("FileName");
+		//String fileName = request.getParameter("FileName");
 
 		//File file = new File("C:\\test\\tetsu.jpg");
 
 		response.setContentType("application/octet-stream");
-		response.setHeader("Content-disposition", "attachment; filename=\"" + fileName + "\"");
+		//response.setHeader("Content-disposition", "attachment; filename=\"" + fileName + "\"");
 		response.setContentLength(con.getContentLength());
 		response.setHeader("Expires", "0");
 		response.setHeader("Cache-Control", "must-revalidate, post-check=0,pre-check=0");
@@ -67,33 +71,52 @@ public class FileDownloadServlet extends HttpServlet {
 			throw new ServletException();
 		}
 
-		ServletOutputStream os = response.getOutputStream();
-		BufferedInputStream bis = new BufferedInputStream(con.getInputStream());
+//		ServletOutputStream os = response.getOutputStream();
+//		BufferedInputStream bis = new BufferedInputStream(con.getInputStream());
+//
+//	     byte[] buff = new byte[500];
+//	     int len;
+//	     while ((len = bis.read(buff)) > 0) {
+//	       os.write(buff, 0, len);
+//	     }
+//	     bis.close();
+//	     os.flush();
 
-	     byte[] buff = new byte[500];
-	     int len;
-	     while ((len = bis.read(buff)) > 0) {
-	       os.write(buff, 0, len);
+		DataInputStream ins = new DataInputStream(con.getInputStream());
+		DataOutputStream ous = new DataOutputStream(
+				new BufferedOutputStream(
+						new FileOutputStream("C:\\test\\tetsu.jpg")));
+
+		//PrintWriter writer = response.getWriter();
+
+		byte[] b = new byte[4096];
+		int readByte = 0;
+
+
+		while(-1 != (readByte = ins.read(b))){
+			ous.write(b, 0, readByte);
+		}
+		ins.close();
+		ous.close();
+
+	     File zipf = new File("tetsu.zip");
+	     File[] files = { new File("C:\\test")};
+	     ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipf));
+
+	     for(File f : files){
+	    	 ZipEntry ze = new ZipEntry(f.getPath().replace("\\\\", "/"));
+	    	 zos.putNextEntry(ze);
+	    	 InputStream is = new BufferedInputStream(new FileInputStream(f));
+	    	 for(;;){
+					int len = is.read(b);
+					if (len < 0) break;
+					zos.write(b, 0, len);
+				}
+				is.close();
 	     }
-	     bis.close();
-	     os.flush();
 
-//		DataInputStream ins = new DataInputStream(con.getInputStream());
-//		DataOutputStream ous = new DataOutputStream(
-//				new BufferedOutputStream(
-//						new FileOutputStream(fileName)));
-//
-//		PrintWriter writer = response.getWriter();
-//
-//		byte[] b = new byte[4096];
-//		int readByte = 0;
-//
 
-//		while(-1 != (readByte = ins.read(b))){
-//			ous.write(b, 0, readByte);
-//		}
-//		ins.close();
-//		ous.close();
+
 
 	}
 
