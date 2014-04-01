@@ -107,30 +107,42 @@ public class FileDownloadServlet extends HttpServlet {
 		// httpではディレクトリ以下指定ができない仕様
 		// すべてのファイルを取得するにはすべてのファイル名を知る必要がある
 		// FTPやNFSなら全ファイルのリストが取れそう？
-		URL url = new URL("http://localhost:8080/FileDownloadTest/tetsu.jpg");
-		HttpURLConnection con = (HttpURLConnection)url.openConnection();
-		con.setRequestMethod("GET");
-		con.connect();
+		// URL url1 = new URL("http://localhost:8080/FileDownloadTest/tetsu1.jpg");
+		// URL url2 = new URL("http://localhost:8080/FileDownloadTest/tetsu2.jpg");
 
-		int status = con.getResponseCode();
+		URL[] urls = new URL[2];
+		urls[0] = new URL("http://localhost:8080/FileDownloadTest/tetsu1.jpg");
+		urls[1] = new URL("http://localhost:8080/FileDownloadTest/tetsu2.jpg");
 
-		if(status != HttpURLConnection.HTTP_OK){
-			throw new ServletException();
-		}
-
+		HttpURLConnection con = null;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ZipOutputStream zos = new ZipOutputStream(baos);
 
-		ZipEntry ze = new ZipEntry("./tetsu/tetsu.jpg");
-		zos.putNextEntry(ze);
-		int len = con.getContentLength();
-		byte[] buf = new byte[len];
-		DataInputStream dis = new DataInputStream(con.getInputStream());
-		for (int i = 0; i < len; i++) {
-			buf[i] = dis.readByte();
+		for(int i = 0; i < urls.length; i++){
+			con = (HttpURLConnection)urls[i].openConnection();
+			con.setRequestMethod("GET");
+			con.connect();
+
+			int status = con.getResponseCode();
+
+			if(status != HttpURLConnection.HTTP_OK){
+				throw new ServletException();
+			}
+
+			String filename = urls[i].toString().substring(39);
+
+			ZipEntry ze = new ZipEntry("./tetsu/" + filename);
+			zos.putNextEntry(ze);
+			int len = con.getContentLength();
+			byte[] buf = new byte[len];
+			DataInputStream dis = new DataInputStream(con.getInputStream());
+			for (int j = 0; j < len; j++) {
+				buf[j] = dis.readByte();
+			}
+			zos.write(buf, 0, len);
+			zos.closeEntry();
+			dis.close();
 		}
-		zos.write(buf, 0, len);
-		dis.close();
 
 		zos.close();
 
@@ -142,12 +154,15 @@ public class FileDownloadServlet extends HttpServlet {
 		//PrintWriter out = response.getOutputStream();
 		OutputStream os = response.getOutputStream();
 		os.write(baos.toByteArray());
-		System.err.println("size: " + baos.size());
+		System.out.println("size: " + baos.size());
 
 
 		if(con != null){
 			con.disconnect();
 		}
+
+
+
 	}
 
 }
